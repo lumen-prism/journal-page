@@ -1,0 +1,31 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>body { margin: 0; background: #222; }</style></head>
+<body><canvas id="out" width="1080" height="1440"></canvas>
+<script src="engine/watercolor.js"></script>
+<script src="engine/journal.js"></script>
+<script src="engine/signature.js"></script>
+<script src="engine/wj.js"></script>
+<script src="engine/page.js"></script>
+<script>
+// ?scene=<scenes/ 下的文件名>&seed=<数字>
+(async () => {
+  try {
+    const q = new URLSearchParams(location.search), t0 = performance.now();
+    const scene = q.get('scene') || 'rainy_sunday';
+    await document.fonts.load('30px "HanziPen SC"', '下雨天哪儿也不去');
+    for (const [n, u] of [['Sunrise', 'fonts/sunrise.woff2'], ['Homemade', 'fonts/homemade.woff2'], ['Cedarville', 'fonts/cedarville.woff2']]) {
+      const f = new FontFace(n, `url(${u})`); await f.load(); document.fonts.add(f);
+    }
+    await new Promise((ok, bad) => { const s = document.createElement('script'); s.src = `scenes/${scene}.js`; s.onload = ok; s.onerror = () => bad(new Error('no scene ' + scene)); document.body.appendChild(s); });
+    const cv = document.getElementById('out');
+    J.init(cv, +(q.get('seed') || 5));
+    WC.paper({ tooth: 5, fibers: 700, fiberLift: 0.12, darkFibers: 60, straw: 0, specks: 25, tint: [248, 245, 241], formation: 0.02 });
+    await SCENES[scene](J, WC);
+    Sig.sign(cv.getContext('2d'), SCENES[scene].sign);   // 落款写在 scene 末尾
+    console.log('done', Math.round(performance.now() - t0) + 'ms');
+    window.DONE = true;
+  } catch (e) { console.error(e.stack || e); window.FAIL = String(e); }
+})();
+</script>
+</body></html>

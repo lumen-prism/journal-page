@@ -1,0 +1,12 @@
+{
+  "name": "journal-page",
+  "version": "1.0.0",
+  "author": "Cedar, with Lumen",
+  "license": "AGPL-3.0-only",
+  "type": "commonjs",
+  "dependencies": {
+    "puppeteer-core": "^25.13.0"
+  },
+  "description": "整页手帐：canvas 画的水彩贴纸、和纸胶带、票根、卡片和手写字",
+  "private": true
+}
