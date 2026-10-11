@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>journal-page · 整页手帐</title>
+<meta name="description" content="一支给 Claude 用的画笔：用代码一笔一笔画一整页水彩手帐。by Cedar, with Lumen">
+<meta property="og:title" content="journal-page · 整页手帐">
+<meta property="og:description" content="让 Claude 用代码，一笔一笔画一整页手帐。">
+<meta property="og:image" content="img/cover.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Homemade+Apple&family=Waiting+for+the+Sunrise&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" rel="stylesheet">
+<style>
+:root {
+  --paper: #f7f3ec; --card: #fffdf8; --ink: #3a2f31; --soft: #7a6a60; --line: #e3d8c8;
+  --accent: #c96f4f; --mint: #bfe0d6; --gold: #f2cf8f; --rose: #f4c7cf; --blue: #cfd9ea;
+  --shadow: 0 6px 18px rgba(80, 64, 50, .22); --noise: .5;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #23201c; --card: #2d2924; --ink: #eee6db; --soft: #b3a596; --line: #3d3730;
+    --accent: #e09272; --shadow: 0 6px 18px rgba(0, 0, 0, .45); --noise: .25;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #23201c; --card: #2d2924; --ink: #eee6db; --soft: #b3a596; --line: #3d3730;
+  --accent: #e09272; --shadow: 0 6px 18px rgba(0, 0, 0, .45); --noise: .25;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0; background: var(--paper); color: var(--ink);
+  font-family: "LXGW WenKai", "Kaiti SC", "PingFang SC", -apple-system, sans-serif;
+  font-size: 18px; line-height: 1.75; overflow-x: hidden;
+}
+body::before {
+  content: ""; position: fixed; inset: 0; pointer-events: none; opacity: var(--noise); z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .38 0 0 0 0 .3 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+main, footer { position: relative; z-index: 1; max-width: 1080px; margin: 0 auto; padding: 0 16px; }
+a { color: var(--accent); }
+img { display: block; max-width: 100%; height: auto; }
+.hand { font-family: "Waiting for the Sunrise", "LXGW WenKai", cursive; }
+.cursive { font-family: "Homemade Apple", cursive; }
+
+/* ── 胶带 */
+.tape {
+  position: absolute; height: 34px; width: 140px; opacity: .85; mix-blend-mode: multiply; z-index: 2;
+  background: repeating-linear-gradient(-55deg, rgba(255,255,255,.45) 0 6px, transparent 6px 14px), var(--gold);
+  clip-path: polygon(2% 0, 98% 4%, 100% 30%, 97% 52%, 100% 76%, 97% 100%, 3% 96%, 0 70%, 3% 48%, 0 24%);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tape { mix-blend-mode: normal; opacity: .55; } }
+:root[data-theme="dark"] .tape { mix-blend-mode: normal; opacity: .55; }
+.tape.mint { background-color: var(--mint); }
+.tape.rose { background: radial-gradient(circle, rgba(255,255,255,.6) 2px, transparent 2.5px) 0 0 / 12px 12px, var(--rose); }
+.tape.blue { background-color: var(--blue); }
+
+/* ── 开头 */
+.hero { padding: 72px 0 24px; }
+.title-wrap { position: relative; display: inline-block; }
+.title-wrap .tape { left: -10px; top: 26px; width: 78%; height: 44px; transform: rotate(-2deg); z-index: 0; }
+h1 { position: relative; z-index: 1; margin: 0; font-family: "Waiting for the Sunrise", cursive; font-weight: 400; font-size: clamp(64px, 13vw, 128px); line-height: 1.05; transform: rotate(-2deg); }
+.zh-title { margin: 6px 0 0 8px; font-size: clamp(30px, 6vw, 46px); }
+.tagline { margin: 4px 0 0 8px; font-size: clamp(19px, 3.4vw, 24px); color: var(--soft); }
+.byline { margin: 6px 0 0 8px; font-family: "Homemade Apple", cursive; font-size: 17px; color: var(--soft); }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 28px 0 0 8px; }
+.btn {
+  display: inline-block; padding: 10px 22px; border-radius: 3px; text-decoration: none; font-size: 18px;
+  background: var(--ink); color: var(--paper); box-shadow: var(--shadow); transform: rotate(-1deg);
+}
+.btn.ghost { background: var(--card); color: var(--ink); transform: rotate(1.2deg); }
+
+/* ── 打印出来贴上去的样张 */
+.samples { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; padding: 40px 12px 24px; }
+.print { position: relative; margin: 0; background: var(--card); padding: 12px; box-shadow: var(--shadow); }
+.print:nth-child(1) { transform: rotate(-2.2deg); }
+.print:nth-child(2) { transform: rotate(2deg); margin-top: 48px; }
+.print .tape { top: -16px; left: 50%; margin-left: -70px; transform: rotate(-4deg); }
+.print:nth-child(2) .tape { transform: rotate(5deg); }
+.print figcaption { font-family: "Waiting for the Sunrise", cursive; font-size: 24px; padding: 6px 4px 0; }
+
+/* ── 小节 */
+section { padding: 56px 0 16px; }
+h2 { position: relative; display: inline-block; margin: 0 0 6px; font-weight: 400; font-size: clamp(30px, 6vw, 42px); }
+h2::after { content: ""; position: absolute; left: -6px; right: -10px; bottom: 6px; height: 14px; background: var(--gold); opacity: .55; z-index: -1; transform: rotate(-1deg); }
+section.mint h2::after { background: var(--mint); }
+section.rose h2::after { background: var(--rose); }
+section.blue h2::after { background: var(--blue); }
+.sub { margin: 0 0 22px; font-family: "Waiting for the Sunrise", cursive; font-size: 26px; color: var(--soft); }
+p { max-width: 40em; }
+
+.zooms { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 26px; margin-top: 26px; align-items: start; }
+.zooms figure { margin: 0; background: var(--card); padding: 8px 8px 4px; box-shadow: var(--shadow); }
+.zooms figure:nth-child(odd) { transform: rotate(-1.4deg); }
+.zooms figure:nth-child(even) { transform: rotate(1.2deg); }
+.zooms figcaption { font-size: 16px; line-height: 1.5; padding: 8px 2px 6px; color: var(--soft); }
+.zooms figure.wide { grid-column: span 2; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 10px 14px; padding: 0; margin: 18px 0 0; list-style: none; }
+.chips li { background: var(--card); padding: 4px 14px; box-shadow: 0 2px 6px rgba(80,64,50,.16); font-size: 17px; }
+.chips li:nth-child(3n+1) { transform: rotate(-1.5deg); }
+.chips li:nth-child(3n+2) { transform: rotate(1deg); }
+.wide-img { margin-top: 26px; background: var(--card); padding: 10px; box-shadow: var(--shadow); transform: rotate(-.6deg); max-width: min(640px, 100%); }
+
+.rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 26px; margin-top: 20px; }
+.rule {
+  position: relative; background: var(--card); padding: 30px 22px 18px; box-shadow: var(--shadow);
+  background-image: repeating-linear-gradient(transparent 0 35px, var(--line) 35px 36px); background-position: 0 22px;
+}
+.rule:nth-child(1) { transform: rotate(-1.5deg); }
+.rule:nth-child(2) { transform: rotate(1deg); }
+.rule:nth-child(3) { transform: rotate(-.6deg); }
+.rule .tape { top: -14px; left: 24px; width: 100px; height: 28px; transform: rotate(-6deg); }
+.rule h3 { margin: 0 0 4px; font-weight: 400; font-size: 23px; }
+.rule p { margin: 0; color: var(--soft); font-size: 17px; line-height: 36px; }
+
+.steps { counter-reset: s; list-style: none; padding: 0; margin: 18px 0 0; }
+.steps li { counter-increment: s; position: relative; padding-left: 44px; margin: 10px 0; }
+.steps li::before { content: counter(s); position: absolute; left: 0; top: -2px; font-family: "Waiting for the Sunrise", cursive; font-size: 32px; color: var(--accent); }
+pre {
+  background: var(--card); padding: 16px 18px; overflow-x: auto; box-shadow: var(--shadow); font-size: 14.5px; line-height: 1.7;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace; border-left: 4px solid var(--mint); max-width: 100%;
+}
+code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .88em; }
+.bubble {
+  position: relative; display: inline-block; margin: 26px 0 0 8px; padding: 16px 24px; font-size: 22px;
+  background: #d8c19c; color: #4a3428; box-shadow: var(--shadow); transform: rotate(1.5deg);
+}
+.bubble .tape { top: -14px; left: 40%; width: 90px; height: 26px; }
+.bubble-note { display: block; margin: 10px 0 0 14px; font-family: "Waiting for the Sunrise", cursive; font-size: 22px; color: var(--soft); }
+
+.license { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; margin-top: 18px; }
+.license div { background: var(--card); padding: 16px 18px; box-shadow: 0 2px 8px rgba(80,64,50,.16); font-size: 16.5px; line-height: 1.6; }
+.license b { display: block; font-weight: 400; font-size: 20px; margin-bottom: 4px; }
+
+footer { padding: 64px 16px 56px; text-align: center; }
+footer .sign { font-family: "Homemade Apple", cursive; font-size: 22px; }
+footer small { display: block; margin-top: 8px; color: var(--soft); font-size: 14px; }
+
+.theme { position: fixed; right: 14px; top: 14px; z-index: 5; width: 40px; height: 40px; border: 0; border-radius: 50%; background: var(--card); color: var(--ink); box-shadow: var(--shadow); font-size: 18px; cursor: pointer; }
+
+@media (max-width: 640px) {
+  body { font-size: 17px; }
+  .hero { padding-top: 56px; }
+  .samples { grid-template-columns: 1fr; gap: 36px; padding: 32px 6px 8px; }
+  .print:nth-child(2) { margin-top: 0; }
+  .zooms { grid-template-columns: 1fr 1fr; gap: 16px; }
+  .zooms figure.wide { grid-column: span 2; }
+}
+</style>
+</head>
+<body>
+<button class="theme" id="theme" aria-label="切换深浅色">◐</button>
+<main>
+  <header class="hero">
+    <div class="title-wrap"><span class="tape"></span><h1>journal-page</h1></div>
+    <p class="zh-title">整页手帐</p>
+    <p class="tagline">让 Claude 用代码，一笔一笔画一整页手帐。</p>
+    <p class="byline">by Cedar, with Lumen</p>
+    <div class="actions">
+      <a class="btn" href="https://github.com/lumen-prism/journal-page">去 GitHub</a>
+      <a class="btn ghost" href="#install">怎么用</a>
+    </div>
+  </header>
+
+  <div class="samples">
+    <figure class="print"><span class="tape"></span><a href="img/autumn_picnic.jpg"><img src="img/autumn_picnic.jpg" alt="Picnic Day：秋天去郊外野餐的一页手帐" width="1080" height="1440"></a><figcaption>Picnic Day</figcaption></figure>
+    <figure class="print"><span class="tape blue"></span><a href="img/rainy_sunday.jpg"><img src="img/rainy_sunday.jpg" alt="Rainy Sunday：下雨天哪儿也不去的一页手帐" width="1080" height="1440"></a><figcaption>Rainy Sunday</figcaption></figure>
+  </div>
+
+  <section>
+    <h2>不是 AI 生图</h2>
+    <p class="sub">every stroke is code</p>
+    <p>每一块颜色、每一道线、每一个字，都是 Claude 在 canvas 上一笔一笔画出来的。水彩是算出来的：几层透明颜色叠在一块里，自己洇开、自己融，水干的地方积出一道深边；纸有纸纹，最后统一打一次侧光，颗粒从颜色底下透上来。画完以后，Claude 会自己看图，哪里不像就改，改到满意为止。</p>
+    <div class="zooms">
+      <figure class="wide"><img src="img/zoom_basket.jpg" alt="藤编篮子特写" width="440" height="420"><figcaption>藤编篮子：编纹会绕开餐巾和皮带，法棍斜插在里面</figcaption></figure>
+      <figure><img src="img/zoom_ginkgo.jpg" alt="银杏叶贴纸特写" width="380" height="360"><figcaption>水彩在一块里自己洇开，外沿一道水干的深线</figcaption></figure>
+      <figure><img src="img/zoom_umbrella.jpg" alt="雨伞贴纸特写" width="380" height="380"><figcaption>波浪裁切线：断断续续，两头收尖，像剪下来的贴纸</figcaption></figure>
+      <figure><img src="img/zoom_ticket.jpg" alt="票根和牛皮纸清单特写" width="470" height="420"><figcaption>票根塞在牛皮纸清单底下，只露一半</figcaption></figure>
+      <figure><img src="img/zoom_hand.jpg" alt="连笔手写特写" width="400" height="360"><figcaption>一段草草的连笔手写</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="mint">
+    <h2>材料一览</h2>
+    <p class="sub">what's inside</p>
+    <p>工具只管"买来的材料"长什么样。摆在哪、画什么、胶带上印什么花纹，每一页都是现想的。</p>
+    <ul class="chips">
+      <li>水彩贴纸 + 波浪裁切线</li><li>宽和纸胶带</li><li>窄纸胶带</li><li>票根</li>
+      <li>横线 / 方格 / 点阵 / 牛皮纸卡片</li><li>标题压胶带</li><li>虚线箭头批注</li><li>连笔英文手写</li><li>雨滴、云、雪花、星星</li>
+    </ul>
+    <a href="img/materials.jpg"><img class="wide-img" src="img/materials.jpg" alt="材料一览：胶带、票根、卡片、贴纸摊开" width="1080" height="1440"></a>
+  </section>
+
+  <section class="rose">
+    <h2>每一页都不一样</h2>
+    <p class="sub">no templates</p>
+    <div class="rules">
+      <div class="rule"><span class="tape rose"></span><h3>菜单，不是清单</h3><p>能放的东西很多，一页挑三到五样就够。照单配齐，再怎么换版面也像模板。</p></div>
+      <div class="rule"><span class="tape mint"></span><h3>每页发明一样</h3><p>至少有一样是这一页自己的：野餐页那块直接画在纸上的格子毯，那片用胶带按住叶柄的银杏。</p></div>
+      <div class="rule"><span class="tape blue"></span><h3>先定三件事</h3><p>主角放哪个角、白留在哪、胶带往哪个方向走。东西有大有小、歪着放、互相压着。</p></div>
+    </div>
+  </section>
+
+  <section class="blue" id="install">
+    <h2>怎么用</h2>
+    <p class="sub">how to</p>
+    <ol class="steps">
+      <li>装好 <a href="https://claude.com/claude-code">Claude Code</a>、Node.js 和 Chrome</li>
+      <li>把仓库放进 Claude 的 skills 文件夹，装一个依赖</li>
+      <li>跟 Claude 说一句话</li>
+    </ol>
+<pre>git clone https://github.com/lumen-prism/journal-page ~/.claude/skills/journal-page
+cd ~/.claude/skills/journal-page
+npm i puppeteer-core</pre>
+    <div class="bubble"><span class="tape"></span>"做一页手帐，主题是周末去海边。"</div>
+    <span class="bubble-note">就这一句。Claude 会自己写、自己看图、改到满意。</span>
+    <p style="margin-top:22px;font-size:16px;color:var(--soft)">中文手写用的是 Mac 自带的 HanziPen SC，别的系统会退回默认字体。示例页签的是 "Cedar"，画自己的页时记得换成你的名字。</p>
+  </section>
+
+  <section>
+    <h2>许可</h2>
+    <div class="license">
+      <div><b>代码 · AGPL-3.0</b>可以用、可以改；用了改了（包括做成网站或服务）都要用 AGPL 开源。闭源商用请<a href="https://github.com/lumen-prism/journal-page/issues">开 Issue</a> 联系作者。</div>
+      <div><b>样张 · CC BY-NC-SA 4.0</b>可以转载、改编，要署名，不可商用，改编后用同样的协议分享。</div>
+      <div><b>字体</b>Waiting for the Sunrise、Cedarville Cursive（SIL OFL 1.1），Homemade Apple（Apache 2.0）。</div>
+    </div>
+  </section>
+</main>
+<footer>
+  <div class="sign">Cedar, with Lumen</div>
+  <small>2026 · <a href="https://github.com/lumen-prism/journal-page">github.com/lumen-prism/journal-page</a></small>
+</footer>
+<script>
+(() => {
+  const root = document.documentElement, btn = document.getElementById('theme');
+  try { const t = localStorage.getItem('jp-theme'); if (t) root.dataset.theme = t; } catch (e) {}
+  btn.addEventListener('click', () => {
+    const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    root.dataset.theme = dark ? 'light' : 'dark';
+    try { localStorage.setItem('jp-theme', root.dataset.theme); } catch (e) {}
+  });
+})();
+</script>
+</body>
+</html>

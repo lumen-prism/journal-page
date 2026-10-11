@@ -1,6 +1,6 @@
 # journal-page · 整页手帐
 
-*by Cedar, with Lumen*
+*by Cedar, with Lumen* · 展示页：https://lumen-prism.github.io/journal-page/
 
 一支给 Claude 用的画笔：把一页手帐画成一张图。水彩贴纸、和纸胶带、票根、卡片、草草的手写字，全部用代码在 canvas 上一笔一笔画出来，不用 AI 生图。
 
